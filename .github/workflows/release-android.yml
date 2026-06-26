@@ -24,6 +24,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
 
+      - name: Install App Dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Generate Native Android Project (Prebuild)
+        working-directory: app
+        run: npx expo prebuild --platform android
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -33,14 +41,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install App Dependencies
-        working-directory: app
-        run: npm ci
-
-      - name: Generate Native Android Project (Prebuild)
-        working-directory: app
-        run: npx expo prebuild --platform android
 
       - name: Enable Split APKs (Reduce size <30MB)
         working-directory: app/android/app
