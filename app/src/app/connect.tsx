@@ -65,7 +65,8 @@ export default function ConnectScreen() {
         <Text style={styles.text}>Camera scanning is not supported on web. Please use a physical device.</Text>
       ) : (
         <CameraView
-          style={StyleSheet.absoluteFillObject}
+          style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]}
+          facing="back"
           barcodeScannerSettings={{
             barcodeTypes: ["qr"],
           }}
