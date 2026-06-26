@@ -1,0 +1,509 @@
+openapi: 3.0.3
+info:
+  title: Proreus Server Control API
+  description: API for the Proreus mobile-first server control platform.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+security:
+  - ApiKeyAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      operationId: getHealth
+      security: []
+      tags:
+        - System
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/metrics:
+    get:
+      summary: Get real-time system metrics
+      operationId: getSystemMetrics
+      tags:
+        - System
+      responses:
+        '200':
+          description: System metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/docker/containers:
+    get:
+      summary: Get Docker containers
+      description: Returns a list of all Docker containers
+      operationId: getSystemDockerContainers
+      responses:
+        '200':
+          description: A list of Docker containers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DockerContainer'
+  /system/docker/containers/{id}/logs:
+    get:
+      summary: Get Docker container logs
+      description: Returns the latest logs for a Docker container
+      operationId: getSystemDockerContainerLogs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The Docker container ID
+      responses:
+        '200':
+          description: Container logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerLogs'
+  /system/docker/containers/{id}/action:
+    post:
+      summary: Execute Docker container action
+      description: Start, stop, or restart a Docker container
+      operationId: executeDockerContainerAction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The Docker container ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DockerActionRequest'
+      responses:
+        '200':
+          description: Action executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerActionResponse'
+  /system/logs:
+    get:
+      summary: Get system logs
+      description: Returns the latest host system logs
+      operationId: getSystemLogs
+      responses:
+        '200':
+          description: A list of system log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemLogEntry'
+  /system/macros:
+    get:
+      summary: Get all macros
+      operationId: getSystemMacros
+      responses:
+        '200':
+          description: List of macros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Macro'
+    post:
+      summary: Create a new macro
+      operationId: createSystemMacro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MacroInput'
+      responses:
+        '200':
+          description: The created macro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Macro'
+  /system/macros/{id}:
+    delete:
+      summary: Delete a macro
+      operationId: deleteSystemMacro
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+  /system/macros/{id}/execute:
+    post:
+      summary: Execute a macro
+      operationId: executeSystemMacro
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MacroExecutionResult'
+  /system/execute:
+    post:
+      summary: Execute an arbitrary system command
+      operationId: executeSystemCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - command
+              properties:
+                command:
+                  type: string
+      responses:
+        '200':
+          description: Execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MacroExecutionResult'
+
+  /power/action:
+    post:
+      summary: Execute a power action
+      operationId: executePowerAction
+      tags:
+        - Power
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PowerActionRequest'
+      responses:
+        '200':
+          description: Power action initiated
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - version
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+        version:
+          type: string
+          description: The agent version
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    DockerContainer:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - image
+        - uptime
+        - ports
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        image:
+          type: string
+        uptime:
+          type: string
+        ports:
+          type: string
+    DockerLogs:
+      type: object
+      required:
+        - logs
+      properties:
+        logs:
+          type: array
+          items:
+            type: string
+    DockerActionRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [start, stop, restart]
+    DockerActionResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    SystemLogEntry:
+      type: object
+      required:
+        - id
+        - timestamp
+        - level
+        - service
+        - message
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        level:
+          type: string
+        service:
+          type: string
+        message:
+          type: string
+    Macro:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - command
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        command:
+          type: string
+        isDangerous:
+          type: boolean
+    MacroInput:
+      type: object
+      required:
+        - name
+        - description
+        - command
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        command:
+          type: string
+        isDangerous:
+          type: boolean
+    MacroExecutionResult:
+      type: object
+      required:
+        - success
+        - output
+      properties:
+        success:
+          type: boolean
+        output:
+          type: string
+    SystemMetrics:
+      type: object
+      required:
+        - cpu
+        - memory
+        - disk
+        - uptime
+        - network
+        - containers
+        - power
+      properties:
+        cpu:
+          type: object
+          required:
+            - usage
+            - cores
+            - frequency
+          properties:
+            usage:
+              type: number
+            cores:
+              type: integer
+            frequency:
+              type: number
+        memory:
+          type: object
+          required:
+            - total
+            - used
+            - free
+            - usagePercent
+          properties:
+            total:
+              type: integer
+              format: int64
+            used:
+              type: integer
+              format: int64
+            free:
+              type: integer
+              format: int64
+            usagePercent:
+              type: number
+        disk:
+          type: object
+          required:
+            - total
+            - used
+            - free
+            - usagePercent
+          properties:
+            total:
+              type: integer
+              format: int64
+            used:
+              type: integer
+              format: int64
+            free:
+              type: integer
+              format: int64
+            usagePercent:
+              type: number
+        uptime:
+          type: integer
+          format: int64
+          description: Uptime in seconds
+        network:
+          type: object
+          required:
+            - upMbps
+            - downMbps
+          properties:
+            upMbps:
+              type: number
+            downMbps:
+              type: number
+        containers:
+          type: object
+          required:
+            - active
+            - warning
+            - exited
+            - running
+          properties:
+            running:
+              type: boolean
+            active:
+              type: integer
+            warning:
+              type: integer
+            exited:
+              type: integer
+        power:
+          type: object
+          required:
+            - watts
+          properties:
+            watts:
+              type: integer
+        thermals:
+          type: array
+          items:
+            type: object
+            required:
+              - sensor
+              - temperature
+            properties:
+              sensor:
+                type: string
+              temperature:
+                type: number
+    PowerActionRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [shutdown, reboot, sleep]
