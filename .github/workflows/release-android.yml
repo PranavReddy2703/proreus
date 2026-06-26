@@ -47,6 +47,9 @@ jobs:
         run: |
           sed -i 's/def enableSeparateBuildPerCPUArchitecture = false/def enableSeparateBuildPerCPUArchitecture = true/g' build.gradle
 
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
+
       - name: Build Release APKs (with Caching)
         working-directory: app/android
         run: ./gradlew assembleRelease --build-cache --configuration-cache
